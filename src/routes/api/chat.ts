@@ -70,7 +70,15 @@ export const Route = createFileRoute("/api/chat")({
           .maybeSingle();
         if (!model || !model.enabled) return json(400, { error: "That model is not available." });
 
-        const resolved = resolveProvider(model);
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+        const cfg = (model.config ?? {}) as { providerKeyId?: string };
+        let override: { baseUrl: string; apiKey?: string } | undefined;
+        if (cfg.providerKeyId) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: pk } = await supabaseAdmin.from("provider_keys").select("base_url, api_key").eq("id", cfg.providerKeyId).maybeSingle();
+          if (pk) override = { baseUrl: pk.base_url, ...(pk.api_key ? { apiKey: pk.api_key } : {}) };
+        }
+        const resolved = resolveProvider(model, override);
         if (!resolved.ok) return json(503, { error: `${model.display_name} isn't connected: ${resolved.reason}` });
 
         const { data: level } = await supabase.from("reasoning_levels").select("*").eq("id", reasoning).maybeSingle();
@@ -83,7 +91,7 @@ export const Route = createFileRoute("/api/chat")({
           .eq("user_id", userId)
           .gte("created_at", since.toISOString());
         const used = (todays ?? []).reduce((a, r) => a + Number(r.units), 0);
-        if (used >= DAILY_UNIT_LIMIT) return json(429, { error: "You've reached today's usage limit. It resets at midnight UTC." });
+        if (!isAdmin && used >= DAILY_UNIT_LIMIT) return json(429, { error: "You've reached today's usage limit. It resets at midnight UTC." });
 
         const { error: insertErr } = await supabase.from("messages").insert({
           thread_id: threadId,
