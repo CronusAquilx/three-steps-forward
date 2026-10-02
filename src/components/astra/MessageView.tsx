@@ -170,8 +170,16 @@ export function MessageView({ message }: { message: UIMessage }) {
       .join("\n");
     const files = text.match(/^<file name="([^"]+)">/gm)?.map((m) => m.slice(12, -2)) ?? [];
     const visible = text.replace(/<file name="[^"]+">[\s\S]*?<\/file>\n*/g, "").trim();
+    const images = message.parts.filter((p) => p.type === "file" && p.mediaType.startsWith("image/")) as { url: string; filename?: string }[];
     return (
       <div className="flex flex-col items-end gap-1.5 animate-rise">
+        {images.length > 0 && (
+          <div className="flex max-w-[85%] flex-wrap justify-end gap-1.5">
+            {images.map((im, i) => (
+              <img key={i} src={im.url} alt={im.filename ?? "photo"} className="size-24 rounded-md border object-cover" />
+            ))}
+          </div>
+        )}
         {files.map((f) => (
           <span key={f} className="rounded-sm border px-2 py-0.5 label-mono">{f}</span>
         ))}
