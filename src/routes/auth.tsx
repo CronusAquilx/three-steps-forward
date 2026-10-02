@@ -8,6 +8,8 @@ import { AstraMark } from "@/components/astra/Mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useServerFn } from "@tanstack/react-start";
+import { devSignIn } from "@/lib/astra/dev-access.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -102,7 +104,52 @@ function AuthPage() {
             {mode === "in" ? "New here? Create an account" : "Have an account? Sign in"}
           </button>
         </div>
+        <AdminMode />
       </div>
     </div>
+  );
+}
+
+function AdminMode() {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [account, setAccount] = useState<"qais" | "chance">("qais");
+  const [busy, setBusy] = useState(false);
+  const signIn = useServerFn(devSignIn);
+
+  async function go(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const res = await signIn({ data: { code, account } });
+      if (!res.ok) throw new Error(res.error);
+      const { error } = await supabase.auth.verifyOtp({ token_hash: res.tokenHash, type: "magiclink" });
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't sign in");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mx-auto mt-6 block label-mono hover:text-foreground">
+        Admin mode
+      </button>
+    );
+  return (
+    <form onSubmit={go} className="mt-6 space-y-3 rounded-lg border bg-card/80 p-4 backdrop-blur">
+      <div className="flex gap-1.5">
+        {(["qais", "chance"] as const).map((a) => (
+          <button key={a} type="button" onClick={() => setAccount(a)}
+            className={`flex-1 rounded-md border px-2 py-1.5 text-sm capitalize ${account === a ? "bg-accent" : ""}`}>
+            {a} (dev)
+          </button>
+        ))}
+      </div>
+      <Input inputMode="numeric" autoFocus placeholder="Access code" value={code} onChange={(e) => setCode(e.target.value)} />
+      <Button type="submit" className="w-full" disabled={busy || !code}>{busy ? "…" : "Enter admin mode"}</Button>
+    </form>
   );
 }
