@@ -14,7 +14,7 @@ export type ModelRow = {
 };
 
 export type ResolvedProvider =
-  | { ok: true; model: LanguageModel; baseURL: string; modelName: string }
+  | { ok: true; model: LanguageModel; baseURL: string; modelName: string; hosted: boolean; providerOptions?: Record<string, Record<string, string>> }
   | { ok: false; reason: string };
 
 function normalizeBase(url: string) {
@@ -30,8 +30,33 @@ export function resolveEndpoint(row: ModelRow) {
   return { baseUrl, apiKey, modelName };
 }
 
+const HOSTED_MODEL = "openai/gpt-6-astra";
+
+/** Built-in hosted fallback used only while no self-hosted server is configured. */
+function hostedFallback(): ResolvedProvider | null {
+  const key = process.env["LOVABLE_API_KEY"];
+  if (!key) return null;
+  const provider = createOpenAICompatible({
+    name: "lovable",
+    baseURL: "https://ai.gateway.lovable.dev/v1",
+    headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
+  });
+  return {
+    ok: true,
+    model: provider.chatModel(HOSTED_MODEL),
+    baseURL: "hosted",
+    modelName: HOSTED_MODEL,
+    hosted: true,
+    providerOptions: { lovable: { reasoningEffort: "low" } },
+  };
+}
+
 export function resolveProvider(row: ModelRow): ResolvedProvider {
   const { baseUrl, apiKey, modelName } = resolveEndpoint(row);
+  if (!baseUrl && row.provider === "local") {
+    const fb = hostedFallback();
+    if (fb) return fb;
+  }
   if (!baseUrl) return { ok: false, reason: "The model server address is not configured yet." };
   if (!modelName) return { ok: false, reason: "The model name is not configured yet." };
   const baseURL = normalizeBase(baseUrl);
@@ -40,11 +65,14 @@ export function resolveProvider(row: ModelRow): ResolvedProvider {
     baseURL,
     ...(apiKey ? { apiKey } : {}),
   });
-  return { ok: true, model: provider.chatModel(modelName), baseURL, modelName };
+  return { ok: true, model: provider.chatModel(modelName), baseURL, modelName, hosted: false };
 }
 
 export async function probeEndpoint(row: ModelRow) {
   const { baseUrl, apiKey, modelName } = resolveEndpoint(row);
+  if (!baseUrl && row.provider === "local" && process.env["LOVABLE_API_KEY"]) {
+    return { configured: true, reachable: true, modelName: "built-in hosted model", detail: "Using the built-in hosted model. Add your own server any time to go fully private" };
+  }
   if (!baseUrl || !modelName) {
     return { configured: false, reachable: false, modelName: modelName ?? null, detail: "Not configured" };
   }
