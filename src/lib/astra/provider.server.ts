@@ -38,7 +38,7 @@ export function resolveProvider(row: ModelRow): ResolvedProvider {
   const provider = createOpenAICompatible({
     name: row.provider === "local" ? "astra-local" : row.provider,
     baseURL,
-    apiKey: apiKey || undefined,
+    ...(apiKey ? { apiKey } : {}),
   });
   return { ok: true, model: provider.chatModel(modelName), baseURL, modelName };
 }

@@ -53,7 +53,7 @@ function ChatWindow({ threadId, title, initial, model, level }: { threadId: stri
         return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : {};
       },
       prepareSendMessagesRequest: ({ messages, headers }) => ({
-        headers,
+        ...(headers ? { headers } : {}),
         body: { threadId, message: messages[messages.length - 1], ...settings.current },
       }),
     }),
