@@ -1,4 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
 
 /**
@@ -14,7 +15,7 @@ export type ModelRow = {
 };
 
 export type ResolvedProvider =
-  | { ok: true; model: LanguageModel; baseURL: string; modelName: string; hosted: boolean; providerOptions?: Record<string, Record<string, string>> }
+  | { ok: true; model: LanguageModel; baseURL: string; modelName: string; hosted: boolean; providerOptions?: Record<string, Record<string, any>> }
   | { ok: false; reason: string };
 
 function normalizeBase(url: string) {
@@ -36,18 +37,26 @@ const HOSTED_MODEL = "openai/gpt-6-astra";
 function hostedFallback(): ResolvedProvider | null {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) return null;
-  const provider = createOpenAICompatible({
-    name: "lovable",
+  const provider = createOpenAI({
     baseURL: "https://ai.gateway.lovable.dev/v1",
+    apiKey: key,
     headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
   });
   return {
     ok: true,
-    model: provider.chatModel(HOSTED_MODEL),
+    model: provider.responses(HOSTED_MODEL),
     baseURL: "hosted",
     modelName: HOSTED_MODEL,
     hosted: true,
-    providerOptions: { lovable: { reasoningEffort: "low" } },
+    providerOptions: {
+      openai: {
+        forceReasoning: true,
+        reasoningEffort: "low",
+        reasoningSummary: "auto",
+        store: false,
+        include: ["reasoning.encrypted_content"],
+      },
+    },
   };
 }
 
