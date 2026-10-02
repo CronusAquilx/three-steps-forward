@@ -124,6 +124,7 @@ Answer in clear Markdown. Use code blocks with language tags for code. If you do
           system,
           messages: await convertToModelMessages(history),
           abortSignal: request.signal,
+          ...(resolved.providerOptions ? { providerOptions: resolved.providerOptions } : {}),
         });
         result.consumeStream();
 
