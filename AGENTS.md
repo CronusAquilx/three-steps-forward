@@ -14,3 +14,4 @@
 - Model registry and reasoning levels live in the database (`models`, `reasoning_levels`), so models are added by data, not code.
 - Chat streaming goes through the `/api/chat` server route with the user's bearer token; messages persist server-side per thread, and the client sends only the latest message.
 - Authenticated pages live under `src/routes/_authenticated/` with `ssr: false`, since the session lives in browser storage.
+- Agent tools are defined in `src/lib/astra/tools.server.ts` and gated by rows in the `tools` table (enabled flag), so tools are switched on/off by data.

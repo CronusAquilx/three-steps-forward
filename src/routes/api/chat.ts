@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
+import { buildTools } from "@/lib/astra/tools.server";
 import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { resolveProvider } from "@/lib/astra/provider.server";
@@ -13,6 +14,8 @@ const Body = z.object({
 });
 
 const HISTORY_LIMIT = 40;
+/** Daily usage cap in units (tokens/1000 x model multiplier x reasoning multiplier). */
+const DAILY_UNIT_LIMIT = 500;
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -62,7 +65,7 @@ export const Route = createFileRoute("/api/chat")({
 
         const { data: model } = await supabase
           .from("models")
-          .select("id, provider, config, display_name, enabled")
+          .select("id, provider, config, display_name, enabled, usage_multiplier")
           .eq("id", modelId)
           .maybeSingle();
         if (!model || !model.enabled) return json(400, { error: "That model is not available." });
@@ -71,6 +74,16 @@ export const Route = createFileRoute("/api/chat")({
         if (!resolved.ok) return json(503, { error: `${model.display_name} isn't connected: ${resolved.reason}` });
 
         const { data: level } = await supabase.from("reasoning_levels").select("*").eq("id", reasoning).maybeSingle();
+
+        const since = new Date();
+        since.setUTCHours(0, 0, 0, 0);
+        const { data: todays } = await supabase
+          .from("usage_events")
+          .select("units")
+          .eq("user_id", userId)
+          .gte("created_at", since.toISOString());
+        const used = (todays ?? []).reduce((a, r) => a + Number(r.units), 0);
+        if (used >= DAILY_UNIT_LIMIT) return json(429, { error: "You've reached today's usage limit. It resets at midnight UTC." });
 
         const { error: insertErr } = await supabase.from("messages").insert({
           thread_id: threadId,
@@ -112,7 +125,8 @@ export const Route = createFileRoute("/api/chat")({
           : "";
 
         const system = `You are Astra, a helpful, precise AI agent. Today is ${new Date().toUTCString()}.
-Answer in clear Markdown. Use code blocks with language tags for code. If you don't know something, say so plainly.${effort}${memoryBlock}`;
+Answer in clear Markdown. Use code blocks with language tags for code. If you don't know something, say so plainly.
+You have tools. Use web_search for current events or facts you're unsure of, then cite sources as markdown links. Use url_fetch to read a page. Use calculator for arithmetic. Use remember when the user shares a lasting preference or fact. When asked to build a website, page, demo, or visual, call html_preview with a complete single-file HTML document (inline CSS/JS) instead of pasting the code, then briefly describe it.${effort}${memoryBlock}`;
 
         if (thread.title === "New chat") {
           const title = textOf(message.parts).replace(/\s+/g, " ").trim().slice(0, 60) || "New chat";
@@ -124,6 +138,23 @@ Answer in clear Markdown. Use code blocks with language tags for code. If you do
           system,
           messages: await convertToModelMessages(history),
           abortSignal: request.signal,
+          tools: await buildTools({ supabase, userId }),
+          stopWhen: stepCountIs(Math.max(50, level?.max_steps ?? 0)),
+          onFinish: async ({ totalUsage }) => {
+            const input = totalUsage.inputTokens ?? 0;
+            const output = totalUsage.outputTokens ?? 0;
+            const units = ((input + output) / 1000) * Number(model.usage_multiplier) * Number(level?.multiplier ?? 1);
+            const { error } = await supabase.from("usage_events").insert({
+              user_id: userId,
+              thread_id: threadId,
+              model_id: model.id,
+              reasoning,
+              input_tokens: input,
+              output_tokens: output,
+              units: Math.round(units * 1000) / 1000,
+            });
+            if (error) console.error("save usage", error);
+          },
           ...(resolved.providerOptions ? { providerOptions: resolved.providerOptions } : {}),
         });
         result.consumeStream();
