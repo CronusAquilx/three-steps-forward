@@ -31,7 +31,7 @@ function MemoryPage() {
     e.preventDefault();
     if (!text.trim() || !user) return;
     const { error } = await supabase.from("memories").insert({ user_id: user.id, content: text.trim() });
-    if (error) return toast.error("Couldn't save that");
+    if (error) { toast.error("Couldn't save that"); return; }
     setText("");
     qc.invalidateQueries({ queryKey: ["memories"] });
   }

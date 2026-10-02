@@ -31,13 +31,13 @@ function NewChat() {
       .select("id")
       .single();
     setBusy(false);
-    if (error || !data) return toast.error("Couldn't start a chat");
+    if (error || !data) { toast.error("Couldn't start a chat"); return; }
     setPending({ threadId: data.id, text });
     qc.invalidateQueries({ queryKey: ["threads"] });
     navigate({ to: "/chat/$threadId", params: { threadId: data.id } });
   }
 
-  const name = user?.user_metadata?.full_name?.split(" ")[0] ?? user?.email?.split("@")[0];
+  const name = user?.user_metadata?.["full_name"]?.split(" ")[0] ?? user?.email?.split("@")[0];
 
   return (
     <div className="flex h-full flex-col sky">
