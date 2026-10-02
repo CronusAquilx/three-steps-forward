@@ -193,6 +193,69 @@ export type Database = {
         }
         Relationships: []
       }
+      tools: {
+        Row: {
+          description: string
+          display_name: string
+          enabled: boolean
+          id: string
+          permission: string
+          sort_order: number
+        }
+        Insert: {
+          description: string
+          display_name: string
+          enabled?: boolean
+          id: string
+          permission?: string
+          sort_order?: number
+        }
+        Update: {
+          description?: string
+          display_name?: string
+          enabled?: boolean
+          id?: string
+          permission?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          created_at: string
+          id: string
+          input_tokens: number
+          model_id: string
+          output_tokens: number
+          reasoning: string
+          thread_id: string | null
+          units: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model_id: string
+          output_tokens?: number
+          reasoning: string
+          thread_id?: string | null
+          units?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model_id?: string
+          output_tokens?: number
+          reasoning?: string
+          thread_id?: string | null
+          units?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
