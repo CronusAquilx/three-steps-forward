@@ -51,7 +51,7 @@ function Admin() {
   const refresh = () => { qc.invalidateQueries({ queryKey: ["admin-stats"] }); qc.invalidateQueries({ queryKey: ["models"] }); };
 
   async function addProvider() {
-    if (!form.name || !form.base || !form.model) return toast.error("Name, address and model are required");
+    if (!form.name || !form.base || !form.model) { toast.error("Name, address and model are required"); return; }
     setSaving(true);
     const { data: pk, error } = await supabase.from("provider_keys")
       .insert({ name: form.name, base_url: form.base.trim(), api_key: form.key.trim() || null }).select("id").single();

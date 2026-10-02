@@ -18,7 +18,6 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
-import { Route as ApiPublicTmpSeedDevsRouteImport } from './routes/api/public/tmp-seed-devs'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,11 +64,6 @@ const AuthenticatedChatThreadIdRoute =
     path: '/chat/$threadId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicTmpSeedDevsRoute = ApiPublicTmpSeedDevsRouteImport.update({
-  id: '/api/public/tmp-seed-devs',
-  path: '/api/public/tmp-seed-devs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,7 +73,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
-  '/api/public/tmp-seed-devs': typeof ApiPublicTmpSeedDevsRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRoutesByTo {
@@ -90,7 +83,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
-  '/api/public/tmp-seed-devs': typeof ApiPublicTmpSeedDevsRoute
   '/chat': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRoutesById {
@@ -103,7 +95,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
-  '/api/public/tmp-seed-devs': typeof ApiPublicTmpSeedDevsRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,7 +107,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/chat'
     | '/chat/$threadId'
-    | '/api/public/tmp-seed-devs'
     | '/chat/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,7 +117,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/chat'
     | '/chat/$threadId'
-    | '/api/public/tmp-seed-devs'
     | '/chat'
   id:
     | '__root__'
@@ -139,7 +128,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/api/chat'
     | '/_authenticated/chat/$threadId'
-    | '/api/public/tmp-seed-devs'
     | '/_authenticated/chat/'
   fileRoutesById: FileRoutesById
 }
@@ -148,7 +136,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
-  ApiPublicTmpSeedDevsRoute: typeof ApiPublicTmpSeedDevsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -216,13 +203,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatThreadIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/tmp-seed-devs': {
-      id: '/api/public/tmp-seed-devs'
-      path: '/api/public/tmp-seed-devs'
-      fullPath: '/api/public/tmp-seed-devs'
-      preLoaderRoute: typeof ApiPublicTmpSeedDevsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -250,7 +230,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
-  ApiPublicTmpSeedDevsRoute: ApiPublicTmpSeedDevsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
