@@ -99,7 +99,7 @@ export function Composer({ onSend, onStop, busy, modelId, reasoning, onModel, on
         className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[15px] outline-none placeholder:text-muted-foreground"
       />
       <div className="flex items-center gap-2 px-2 pb-2">
-        <input ref={fileRef} type="file" multiple hidden accept="image/*,.pdf,.docx,.txt,.md,.csv,.json,.html,.css,.js,.ts,.tsx,.py,.xml,.yml,.yaml,.log,.sql" onChange={(e) => addFiles(e.target.files)} />
+        <input ref={fileRef} type="file" multiple hidden onChange={(e) => addFiles(e.target.files)} />
         <button onClick={() => fileRef.current?.click()} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Attach files">
           <Paperclip className="size-4" />
         </button>

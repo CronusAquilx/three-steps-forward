@@ -298,6 +298,75 @@ export type Database = {
         }
         Relationships: []
       }
+      watch_history: {
+        Row: {
+          episode: number | null
+          id: string
+          media_type: string
+          poster_path: string | null
+          progress: number | null
+          season: number | null
+          title: string | null
+          tmdb_id: number
+          user_id: string
+          watched_at: string
+        }
+        Insert: {
+          episode?: number | null
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          progress?: number | null
+          season?: number | null
+          title?: string | null
+          tmdb_id: number
+          user_id: string
+          watched_at?: string
+        }
+        Update: {
+          episode?: number | null
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          progress?: number | null
+          season?: number | null
+          title?: string | null
+          tmdb_id?: number
+          user_id?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
+      watchlist: {
+        Row: {
+          added_at: string
+          id: string
+          media_type: string
+          poster_path: string | null
+          title: string | null
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          title?: string | null
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          media_type?: string
+          poster_path?: string | null
+          title?: string | null
+          tmdb_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
