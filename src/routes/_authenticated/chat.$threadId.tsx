@@ -65,7 +65,7 @@ function ChatWindow({ threadId, title, initial, model, level }: { threadId: stri
 
   useEffect(() => {
     const t = takePending(threadId);
-    if (t) sendMessage({ text: t });
+    if (t) sendMessage({ text: t.text, ...(t.files ? { files: t.files } : {}) });
   }, [threadId, sendMessage]);
 
   useEffect(() => {
@@ -114,7 +114,7 @@ function ChatWindow({ threadId, title, initial, model, level }: { threadId: stri
       </div>
       <div className="mx-auto w-full max-w-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-6">
         <Composer
-          onSend={(text) => sendMessage({ text })}
+          onSend={(text, files) => sendMessage({ text, ...(files ? { files } : {}) })}
           onStop={stop}
           busy={busy}
           modelId={modelId}

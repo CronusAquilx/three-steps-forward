@@ -22,7 +22,7 @@ function NewChat() {
   const [reasoning, setReasoning] = useState("medium");
   const [busy, setBusy] = useState(false);
 
-  async function start(text: string) {
+  async function start(text: string, files?: import("ai").FileUIPart[]) {
     if (!user) return;
     setBusy(true);
     const { data, error } = await supabase
@@ -32,7 +32,7 @@ function NewChat() {
       .single();
     setBusy(false);
     if (error || !data) { toast.error("Couldn't start a chat"); return; }
-    setPending({ threadId: data.id, text });
+    setPending({ threadId: data.id, text, ...(files ? { files } : {}) });
     qc.invalidateQueries({ queryKey: ["threads"] });
     navigate({ to: "/chat/$threadId", params: { threadId: data.id } });
   }

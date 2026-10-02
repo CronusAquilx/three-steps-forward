@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { Brain, LogOut, Menu, MessageSquare, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { Brain, LogOut, Shield, Menu, MessageSquare, Plus, Search, Settings, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -150,6 +150,7 @@ function SidebarBody({ onNavigate, onSearch }: { onNavigate: () => void; onSearc
         <Link to="/settings" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
           <Settings className="size-4" /> Settings
         </Link>
+        <AdminLink onNavigate={onNavigate} />
         <div className="flex items-center gap-2 px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{user?.email}</span>
           <button onClick={() => supabase.auth.signOut()} className="text-muted-foreground hover:text-foreground" aria-label="Sign out">
@@ -195,5 +196,20 @@ function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (o: 
         )}
       </CommandList>
     </CommandDialog>
+  );
+}
+
+function AdminLink({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => (await supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" })).data ?? false,
+  });
+  if (!isAdmin) return null;
+  return (
+    <Link to="/admin" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
+      <Shield className="size-4" /> Dev dashboard
+    </Link>
   );
 }

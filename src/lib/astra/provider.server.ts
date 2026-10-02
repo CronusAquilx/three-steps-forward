@@ -60,8 +60,11 @@ function hostedFallback(): ResolvedProvider | null {
   };
 }
 
-export function resolveProvider(row: ModelRow): ResolvedProvider {
-  const { baseUrl, apiKey, modelName } = resolveEndpoint(row);
+export function resolveProvider(row: ModelRow, override?: { baseUrl: string; apiKey?: string }): ResolvedProvider {
+  const env = resolveEndpoint(row);
+  const baseUrl = override?.baseUrl ?? env.baseUrl;
+  const apiKey = override ? override.apiKey : env.apiKey;
+  const modelName = env.modelName;
   if (!baseUrl && row.provider === "local") {
     const fb = hostedFallback();
     if (fb) return fb;

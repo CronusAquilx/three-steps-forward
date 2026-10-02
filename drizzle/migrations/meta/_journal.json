@@ -15,6 +15,13 @@
       "when": 1790909706335,
       "tag": "0001_phase2_tools_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790910317176,
+      "tag": "0002_dev_accounts_provider_keys",
+      "breakpoints": true
     }
   ]
 }

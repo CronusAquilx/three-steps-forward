@@ -3,9 +3,11 @@ import { ArrowUp, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { ModelPicker } from "./ModelPicker";
 import { cn } from "@/lib/utils";
+import type { FileUIPart } from "ai";
+import { MAX_FILES, MAX_FILE_BYTES, readAttachment, type Attachment } from "@/lib/astra/files";
 
 type Props = {
-  onSend: (text: string) => void;
+  onSend: (text: string, images?: FileUIPart[]) => void;
   onStop?: () => void;
   busy?: boolean;
   modelId: string;
@@ -17,24 +19,31 @@ type Props = {
 
 export function Composer({ onSend, onStop, busy, modelId, reasoning, onModel, onReasoning, autoFocusKey }: Props) {
   const [text, setText] = useState("");
-  const [files, setFiles] = useState<{ name: string; content: string }[]>([]);
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const [reading, setReading] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function addFiles(list: FileList | null) {
-    for (const f of Array.from(list ?? [])) {
-      if (f.size > 200_000) {
-        toast.error(`${f.name} is too large (max 200 KB)`);
-        continue;
-      }
-      const content = await f.text();
-      if (content.includes("\u0000")) {
-        toast.error(`${f.name} isn't a text file. Text, code, CSV, JSON and Markdown files are supported.`);
-        continue;
-      }
-      setFiles((prev) => [...prev, { name: f.name, content }]);
-    }
+    const picked = Array.from(list ?? []);
     if (fileRef.current) fileRef.current.value = "";
+    const room = MAX_FILES - files.length;
+    if (picked.length > room) toast.error(`You can attach up to ${MAX_FILES} files at a time.`);
+    for (const f of picked.slice(0, Math.max(0, room))) {
+      if (f.size > MAX_FILE_BYTES) {
+        toast.error(`${f.name} is too large (max 50 MB)`);
+        continue;
+      }
+      setReading((n) => n + 1);
+      try {
+        const att = await readAttachment(f);
+        setFiles((prev) => (prev.length >= MAX_FILES ? prev : [...prev, att]));
+      } catch (e) {
+        toast.error(`${f.name}: ${e instanceof Error ? e.message : "couldn't be read"}`);
+      } finally {
+        setReading((n) => n - 1);
+      }
+    }
   }
 
   useEffect(() => {
@@ -51,24 +60,28 @@ export function Composer({ onSend, onStop, busy, modelId, reasoning, onModel, on
   function submit() {
     const t = text.trim();
     if ((!t && !files.length) || busy) return;
-    const attached = files.map((f) => `<file name="${f.name.replace(/"/g, "")}">\n${f.content}\n</file>`).join("\n\n");
-    onSend(attached ? `${attached}\n\n${t}` : t);
+    if (reading) return;
+    const attached = files.flatMap((f) => (f.kind === "text" ? [f] : [])).map((f) => `<file name="${f.name.replace(/"/g, "")}">\n${f.content}\n</file>`).join("\n\n");
+    const images = files.flatMap((f) => (f.kind === "image" ? [f.part] : []));
+    onSend(attached ? `${attached}\n\n${t}` : t || (images.length ? "Take a look at these." : ""), images.length ? images : undefined);
     setText("");
     setFiles([]);
   }
 
   return (
     <div className="rounded-lg border bg-card shadow-[0_8px_30px_-12px_color-mix(in_oklch,var(--star)_18%,transparent)] focus-within:border-ring/60">
-      {files.length > 0 && (
+      {(files.length > 0 || reading > 0) && (
         <div className="flex flex-wrap gap-1.5 px-3 pt-3">
           {files.map((f, i) => (
             <span key={i} className="flex items-center gap-1 rounded-sm border bg-muted px-2 py-0.5 text-xs">
+              {f.kind === "image" && <img src={f.part.url} alt="" className="size-5 rounded-sm object-cover" />}
               {f.name}
               <button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
                 <X className="size-3" />
               </button>
             </span>
           ))}
+          {reading > 0 && <span className="px-2 py-0.5 text-xs text-muted-foreground">Reading {reading} file{reading > 1 ? "s" : ""}…</span>}
         </div>
       )}
       <textarea
@@ -86,7 +99,7 @@ export function Composer({ onSend, onStop, busy, modelId, reasoning, onModel, on
         className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[15px] outline-none placeholder:text-muted-foreground"
       />
       <div className="flex items-center gap-2 px-2 pb-2">
-        <input ref={fileRef} type="file" multiple hidden onChange={(e) => addFiles(e.target.files)} />
+        <input ref={fileRef} type="file" multiple hidden accept="image/*,.pdf,.docx,.txt,.md,.csv,.json,.html,.css,.js,.ts,.tsx,.py,.xml,.yml,.yaml,.log,.sql" onChange={(e) => addFiles(e.target.files)} />
         <button onClick={() => fileRef.current?.click()} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Attach files">
           <Paperclip className="size-4" />
         </button>

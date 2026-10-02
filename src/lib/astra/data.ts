@@ -60,11 +60,11 @@ export const levelsQuery = queryOptions({
 });
 
 /** One-shot handoff of the first message from the new-chat screen to the thread page. */
-let pending: { threadId: string; text: string } | null = null;
+let pending: { threadId: string; text: string; files?: import("ai").FileUIPart[] } | null = null;
 export const setPending = (p: typeof pending) => (pending = p);
 export const takePending = (threadId: string) => {
   if (pending?.threadId !== threadId) return null;
-  const t = pending.text;
+  const t = pending;
   pending = null;
   return t;
 };

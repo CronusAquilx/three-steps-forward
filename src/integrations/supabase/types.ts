@@ -139,6 +139,30 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_keys: {
+        Row: {
+          api_key: string | null
+          base_url: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          api_key?: string | null
+          base_url: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          api_key?: string | null
+          base_url?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       reasoning_levels: {
         Row: {
           id: string
